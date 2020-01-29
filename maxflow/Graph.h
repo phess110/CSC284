@@ -5,6 +5,7 @@
 #include <vector>
 #include <unordered_map>
 #include "Vertex.h"
+#include <set>
 
 using std::vector;
 using std::map;
@@ -13,7 +14,8 @@ using std::queue;
 using std::unordered_map;
 using std::pair;
 
-typedef map<pair<uint16_t, uint16_t>, uint32_t> function;
+typedef map<pair<uint16_t, uint16_t>, uint32_t> unsigned_function;
+typedef map<pair<uint16_t, uint16_t>, uint32_t> signed_function;
 typedef pair<uint16_t, uint16_t> edge;
 
 class Graph
@@ -27,11 +29,13 @@ public:
     pair<vector<uint16_t>, uint32_t> ShortestPath(uint16_t, uint16_t);
 
 private:
-    Graph ResidualNetwork(function);
-    void AugmentResidualNetwork(Graph*, function, vector<uint16_t>);
+    void Push(uint16_t, uint16_t, signed_function &, std::set<uint16_t>&, vector<uint32_t>&);
+    void Relabel(uint16_t, signed_function&, vector<int> &);
+    Graph ResidualNetwork(signed_function);
+    void AugmentResidualNetwork(Graph*, signed_function, vector<uint16_t>);
 
     uint16_t order;
     unordered_map<uint16_t,Vertex> vertices;
-    function capacity;
+    unsigned_function capacity;
 };
 
