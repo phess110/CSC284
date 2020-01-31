@@ -1,13 +1,10 @@
 #pragma once
 #include <cstdint>
-#include <vector>
 #include <list>
 
-using std::vector;
 using std::list;
 
-class Vertex
-{
+class Vertex {
 public:
     Vertex(uint16_t);
     Vertex();
@@ -19,9 +16,7 @@ public:
     list<uint16_t> Neighbors();
     list<uint16_t> *NeighborsPtr();
 
-
 private:
-
     uint16_t index;
     list<uint16_t> neighbors; 
 };
