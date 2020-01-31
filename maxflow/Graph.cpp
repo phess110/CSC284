@@ -1,3 +1,7 @@
+/**
+    Implementation of Graph class for max flow algorithms
+**/
+
 #include "Graph.h"
 
 Graph::Graph(uint16_t numVerts) :
@@ -8,24 +12,55 @@ Graph::Graph(uint16_t numVerts) :
     }
 };
 
+/* Add additional vertex after construction */
+void Graph::AddVertex() {
+    order += 1;
+    vertices[order] = Vertex(order);
+}
+
+/*
+// Inserts a directed edge from head to tail with given capacity
+// If there is already an edge from tail to head, insert intermediate vertex, i.e.
+// Avoids antiparallel edges
+// Should be used when constructing the initial flow problem
+*/
+void Graph::AddEdgeNoReversal(uint16_t head, uint16_t tail, uint32_t cap = 0) {
+    list<uint16_t>* neighbors = vertices[tail].NeighborsPtr();
+    if (std::find(neighbors->begin(), neighbors->end(), head) != neighbors->end()) {
+        AddVertex();
+        vertices[head].AddNeighbor(order);
+        vertices[order].AddNeighbor(tail);
+        capacity[edge(head, order)] = cap;
+        capacity[edge(order, tail)] = cap;
+    }
+    else {
+        neighbors = vertices[head].NeighborsPtr();
+        if (std::find(neighbors->begin(), neighbors->end(), tail) != neighbors->end()) {
+            capacity[edge(head, tail)] += cap;
+        }
+        else {
+            vertices[head].AddNeighbor(tail);
+            capacity[edge(head, tail)] = cap;
+        }
+    }
+}
+
+// Insert an the given edge into the graph with capacity
 void Graph::AddEdge(uint16_t head, uint16_t tail, uint32_t cap = 0) {
     vertices[head].AddNeighbor(tail);
     capacity[edge(head, tail)] = cap;
 }
 
-// Ford-Fulkerson algorithm
+// Ford-Fulkerson algorithm augmenting via shortest path
 uint32_t Graph::EdmondKarp(uint16_t source, uint16_t sink) {
     // Initialize flow to 0
     signed_function f;
-    // TODO perhaps this should be int32_t not uint32_t?
-    // TODO make flow symmetric for simplicity?
-    // maybe there are loops causing problems?
-
     for (uint16_t v = 1; v <= order; v++) {
-        vector<uint16_t> neighbors = vertices[v].Neighbors();
-        for (std::size_t i = 0; i < neighbors.size(); i++) {
-            f[edge(v, neighbors[i])] = 0;
-            f[edge(neighbors[i], v)] = 0;
+        list<uint16_t> neighbors = vertices[v].Neighbors();
+        list<uint16_t>::iterator it;
+        for (it = neighbors.begin(); it != neighbors.end(); it++) {
+            f[edge(v, *it)] = 0;
+            f[edge(*it, v)] = 0;
         }
     }
 
@@ -36,7 +71,7 @@ uint32_t Graph::EdmondKarp(uint16_t source, uint16_t sink) {
 
     while (augPath.size()) {
         for (uint16_t i = 0; i < augPath.size() - 1; i++) {
-            vector<uint16_t> neighs = vertices[augPath[i]].Neighbors();
+            list<uint16_t> neighs = vertices[augPath[i]].Neighbors();
             if (std::find(neighs.begin(), neighs.end(), augPath[i+1]) != neighs.end()) {
                 f[edge(augPath[i], augPath[i + 1])] += minCap;
             }
@@ -45,7 +80,6 @@ uint32_t Graph::EdmondKarp(uint16_t source, uint16_t sink) {
             }
         }
         val += minCap;
-        //residual = ResidualNetwork(f);
         residual.AugmentResidualNetwork(this, f, augPath);
         std::tie(augPath, minCap) = residual.ShortestPath(source, sink);
     }
@@ -53,18 +87,18 @@ uint32_t Graph::EdmondKarp(uint16_t source, uint16_t sink) {
     return val;
 }
 
-// O(E)
 // Returns the residual network associated with the given digraph and flow
 Graph Graph::ResidualNetwork(signed_function flow) {
     // Duplicate current graph
     Graph gf(order);
     // set capacities - add an edge iff capacity(u,v) > flow(u,v)
-    uint32_t f, newcap;
+    int32_t f, newcap;
 
     for (uint16_t v = 1; v <= order; v++) {
-        vector<uint16_t> neighbors = vertices[v].Neighbors();
-        for (std::size_t i = 0; i < neighbors.size(); i++) {
-            uint16_t u = neighbors[i];
+        list<uint16_t> neighbors = vertices[v].Neighbors();
+        list<uint16_t>::iterator it;
+        for (it = neighbors.begin(); it != neighbors.end(); it++) {
+            uint16_t u = *it;
             f = flow[edge(v, u)];
             newcap = capacity[edge(v, u)] - f;
 
@@ -72,9 +106,8 @@ Graph Graph::ResidualNetwork(signed_function flow) {
                 gf.AddEdge(v, u, newcap);
             }
 
-            newcap = f + (capacity.count(edge(u, v)) ? capacity[edge(u,v)] : 0);
-        
-            if (newcap > 0) {
+            newcap = f;
+            if (f > 0) {
                 gf.AddEdge(u, v, newcap);  
             }
         }
@@ -82,16 +115,17 @@ Graph Graph::ResidualNetwork(signed_function flow) {
     return gf;
 }
 
-void Graph::AugmentResidualNetwork(Graph* g, signed_function flow, vector<uint16_t> path) {
+// Adjust residual capacities along a given path
+void Graph::AugmentResidualNetwork(Graph* g, signed_function& flow, vector<uint16_t> path) {
     uint32_t f, newcap;
-    uint16_t len = path.size() - 1;
+    size_t len = path.size() - 1;
     uint16_t u, v, t;
 
     for (uint16_t i = 0; i < len; i++) {
         u = path[i];
         v = path[i + 1];
-        vector<uint16_t> neighbors = g->vertices[u].Neighbors();
-        vector<uint16_t>::iterator it = std::find(neighbors.begin(), neighbors.end(), v);
+        list<uint16_t> neighbors = g->vertices[u].Neighbors();
+        list<uint16_t>::iterator it = std::find(neighbors.begin(), neighbors.end(), v);
 
         // If u -> v is not in G, switch
         if (it == neighbors.end()) {
@@ -135,6 +169,10 @@ void Graph::AugmentResidualNetwork(Graph* g, signed_function flow, vector<uint16
     }
 }
 
+/*  
+    Returns a vector consisting of the shortest start, end-path
+    and the bottleneck capacity of that path.
+*/
 pair<vector<uint16_t>, uint32_t> Graph::ShortestPath(uint16_t start, uint16_t end) {
     queue<uint16_t> queue;
     unordered_map<uint16_t, bool> visited;
@@ -153,9 +191,10 @@ pair<vector<uint16_t>, uint32_t> Graph::ShortestPath(uint16_t start, uint16_t en
         currIndex = queue.front();
         queue.pop();
 
-        Vertex curr = vertices[currIndex];
-        for (size_t i = 0; i < curr.Neighbors().size(); i++) {
-            uint16_t u = curr.Neighbors()[i];
+        list<uint16_t> neighbors = vertices[currIndex].Neighbors();
+        list<uint16_t>::iterator it = neighbors.begin();
+        for (it; it != neighbors.end(); it++) {
+            uint16_t u = *it;
             if (!visited[u]) {
                 queue.push(u);
                 parents[u] = currIndex;
@@ -188,128 +227,131 @@ uint32_t Graph::PushRelabelFlow(uint16_t source, uint16_t sink) {
     vector<int> l;  // height labeling
     vector<uint32_t> excess;                // keep track of excess at each vertex
     l.push_back(0), excess.push_back(0);    // skip 1st entry (vertices are 1-indexed)
-    std::set<uint16_t> active;              // list of currently active vertices
+    std::list<uint16_t> active;             // list of currently active vertices
 
     // initialize preflow and valid labelling
-    vector<uint16_t> neighbors;
+    list<uint16_t>* neighbors;
+    list<uint16_t>::iterator it;
     for (uint16_t v = 1; v <= order; v++) {
-        neighbors = vertices[v].Neighbors();
+        neighbors = vertices[v].NeighborsPtr();
+        it = neighbors->begin();
         l.push_back(0);
-        for (std::size_t i = 0; i < neighbors.size(); i++) {
-            f[edge(v, neighbors[i])] = 0;
-            f[edge(neighbors[i], v)] = 0;
+        for (it; it != neighbors->end(); it++) {
+            f[edge(v, *it)] = 0;
+            f[edge(*it, v)] = 0;
         }
         excess.push_back(0);
     }
 
-    neighbors = vertices[source].Neighbors();
+    neighbors = vertices[source].NeighborsPtr();
+    it = neighbors->begin();
     l[source] = order;
     uint32_t cap;
-    for (std::size_t i = 0; i < neighbors.size(); i++) {
-        cap = capacity[edge(source, neighbors[i])];
-        f[edge(source, neighbors[i])] = cap;
-        f[edge(neighbors[i], source)] = -static_cast<int32_t>(cap);
-        active.insert(neighbors[i]);
-        excess[neighbors[i]] = cap;
+    for (it; it != neighbors->end(); it++) {
+        cap = capacity[edge(source, *it)];
+        f[edge(source, *it)] = cap;
+        f[edge(*it, source)] = -(static_cast<int32_t>(cap));
+        if (*it != sink) {
+            active.push_back(*it);
+        }
+        excess[*it] = cap;
     }
+
+    Graph residual = ResidualNetwork(f);
 
     uint16_t u;
     while (!active.empty()) {
         // grab active vertex with maximum height
-        std::set<uint16_t>::iterator it = active.begin();
-        u = *it;
+        std::list<uint16_t>::iterator it = active.begin();
+        std::list<uint16_t>::iterator loc = it;
         int m = l[*it];
         for (it; it != active.end(); it++) {
             if (l[*it] > m) {
-                u = *it;
+                loc = it;
                 m = l[*it];
             }
         }
+        u = *loc;
 
-        // use sentinel
-        bool pushed = false;
-        for (uint16_t v = 1; v <= order; v++) {
-            if (l[u] != 1 + l[v]) { continue; }
-            if (capacity[edge(u, v)] > f[edge(u, v)]) {
-                // (u,v) in Gf
-                pushed = true;
-                Push(u, v, f, active, excess);
-                break;
+        bool edgeUtoV, edgeVtoU, pushed = false;
+        neighbors = vertices[u].NeighborsPtr();
+        list<uint16_t> *vNeighbors;
+        list<uint16_t> *residualNeighbors = residual.vertices[u].NeighborsPtr();
+        // PUSH operation
+        for (it = residualNeighbors->begin(); it != residualNeighbors->end(); it++) {
+            if (l[u] != 1 + l[*it]) { continue; }
+            // is the an edge from u to v in G
+            edgeUtoV = (std::find(neighbors->begin(), neighbors->end(), *it) != neighbors->end());
+            vNeighbors = residual.vertices[*it].NeighborsPtr();
+            edgeVtoU = (std::find(vNeighbors->begin(), vNeighbors->end(), u) != vNeighbors->end());
+            pushed = true;
+
+            uint32_t delta;
+            if (edgeUtoV) {
+                delta = std::min(excess[u], capacity[edge(u, *it)] - f[edge(u, *it)]);
+                // update residual
+                if (f[edge(u, *it)] == 0 && !edgeVtoU) {
+                    residual.AddEdge(*it, u, delta);
+                }
+                else {
+                    residual.capacity[edge(*it, u)] += delta;
+                }
             }
-        }
+            else {
+                delta = std::min(excess[u], (uint32_t) f[edge(*it, u)]);
+                // update residual
+                if (f[edge(*it, u)] == capacity[edge(*it, u)] && !edgeVtoU) {
+                    residual.AddEdge(*it, u, delta);
+                }
+                else {
+                    residual.capacity[edge(*it, u)] += delta;
+                }
+            }
 
+            // update flow
+            f[edge(u, *it)] += delta;
+            f[edge(*it, u)] -= delta;
+
+            // did v become newly active
+            if (excess[*it] == 0 && *it != sink && *it != source) {
+                active.push_back(*it);
+            }
+
+            // update excesses
+            excess[u] -= delta;
+            excess[*it] += delta;
+
+            // update residual graph for edge (u,v)
+            residual.capacity[edge(u, *it)] -= delta;
+            if (residual.capacity[edge(u, *it)] == 0) {
+                residual.vertices[u].RemoveNeighbor(it);
+            }
+
+            // u inactive?
+            if (excess[u] == 0) {
+                active.erase(loc); // remove u
+            }
+
+            break;
+        }
+        // RELABEL
         if (!pushed) {
-            // call relabel of u
-            Relabel(u, f, l);
+            Relabel(u, residual, l);
         }
     }
 
-    uint32_t val = 0;
-
-    return val;
+    return excess[sink];
 }
 
-void Graph::Push(uint16_t u,
-                uint16_t v, 
-                signed_function& flow,
-                std::set<uint16_t>& active, 
-                vector<uint32_t>& excess) {
+// Modify height labeling so that l[u] = 1 + min_{(u,v) in Gf} l[v]
+void Graph::Relabel(uint16_t u, Graph& residual, vector<int> &l) {
 
-    uint32_t excess_u = excess[u];
-    // is v a neighbor of u
-    //      increase f[u,v] by min(a_u, c(u,v) - f[u,v])
-    //      decrease f[v,u] by same amount
-    // otherwise u is a neighbor of v
-    //      increase = min(a_u, f[u,v])
-    //      decrease f[v,u] by same amount
-
-    vector<uint16_t> neighbors = vertices[u].Neighbors();
-    uint32_t delta;
-    if (std::find(neighbors.begin(), neighbors.end(), v) != neighbors.end()) {
-        delta = std::min(excess_u, capacity[edge(u,v)] - flow[edge(u,v)]);
-        flow[edge(u, v)] += delta;
-        flow[edge(v, u)] -= delta;
-    }
-    else {
-        delta = std::min(excess_u, flow[edge(u, v)]);
-        flow[edge(u, v)] -= delta;
-        flow[edge(v, u)] += delta;
-    }
-
-    // update excesses
-    excess[u] -= delta;
-    excess[v] += delta;
-
-    // track which vertices become active/inactive.
-    if (delta == excess_u) {
-        active.erase(u);
-    }
-    active.insert(v);
-}
-
-// l[u] = min_{(u,v) in Gf} l[v] + 1
-void Graph::Relabel(uint16_t u, signed_function &flow, vector<int> &l) {
-    vector<uint16_t> neighbors = vertices[u].Neighbors();
     int m = INT32_MAX;
-    for (size_t i = 0; i < neighbors.size(); i++) {
-        if (capacity[edge(u, neighbors[i])] > flow[edge(u,neighbors[i])]) {
-            m = std::min(m, l[neighbors[i]]);
-        }
+    list<uint16_t>* neighbors = residual.vertices[u].NeighborsPtr();
+    list<uint16_t>::iterator it = neighbors->begin();
+    for (it; it != neighbors->end(); it++) {
+        m = std::min(m, l[*it]);
     }
-
-    for (uint16_t v = 0; v < order; v++) {
-        if (v == u) { continue; }
-        neighbors = vertices[v].Neighbors();
-        if (std::find(neighbors.begin(), neighbors.end(), u) != neighbors.end()) {
-            // u is a neighbor of v
-            if (flow[edge(v,u)] > 0) {
-                m = std::min(m, l[v]);
-            }
-        }
-    }
-    // for v in V, if u is a neighbor of V
-    //  if f[v,u] > 0
-    //        l[u] = min()
 
     l[u] = m + 1;
 }

@@ -1,8 +1,10 @@
 #pragma once
 #include <cstdint>
 #include <vector>
+#include <list>
 
 using std::vector;
+using std::list;
 
 class Vertex
 {
@@ -11,14 +13,16 @@ public:
     Vertex();
 
     void AddNeighbor(uint16_t);
-    vector<uint16_t>::iterator FindNeighbor(uint16_t idx);
-    vector<uint16_t>::iterator EndNeighbor();
-    void RemoveNeighbor(std::vector<uint16_t>::iterator);
-    vector<uint16_t> Neighbors();
+    list<uint16_t>::iterator FindNeighbor(uint16_t idx);
+    list<uint16_t>::iterator EndNeighbor();
+    void RemoveNeighbor(list<uint16_t>::iterator);
+    list<uint16_t> Neighbors();
+    list<uint16_t> *NeighborsPtr();
+
 
 private:
 
     uint16_t index;
-    vector<uint16_t> neighbors; 
+    list<uint16_t> neighbors; 
 };
 

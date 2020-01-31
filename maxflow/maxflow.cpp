@@ -1,5 +1,6 @@
-//
-//
+/**
+    Max flow main
+**/
 
 #include <iostream>
 #include "Graph.h"
@@ -7,6 +8,8 @@
 #include <string>
 
 int problemCount;
+
+// todo add mechanism to switch between two heuristics
 
 uint32_t ReadFlowNetwork() {
     uint16_t order, size, source, sink;
@@ -16,9 +19,6 @@ uint32_t ReadFlowNetwork() {
     std::cin >> source;
     std::cin >> sink;
 
-    //std::cout << "Graph with " << order << " vertices, " << size << " edges, source " << source
-              //  << " and sink " << sink << "\n";
-
     Graph g(order);
     uint16_t v, u;
     uint32_t c;
@@ -26,10 +26,12 @@ uint32_t ReadFlowNetwork() {
         std::cin >> v;
         std::cin >> u;
         std::cin >> c;
-        //std::cout << "Added edge " << v << " to, " << u << " with capcity " << c << "\n";
-        g.AddEdge(v, u, c);
+
+        g.AddEdgeNoReversal(v, u, c);
     }
-    return g.EdmondKarp(source, sink);
+    
+    //return g.EdmondKarp(source, sink);
+    return g.PushRelabelFlow(source, sink);
 }
 
 int main()
