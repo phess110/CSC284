@@ -8,14 +8,14 @@ Graph::Graph(uint16_t numVerts) :
     order(numVerts)
 {
     for (uint16_t i = 1; i <= numVerts; i++) {
-        vertices[i] = Vertex(i);
+        vertices[i] = Vertex();
     }
 };
 
 /* Add additional vertex after construction */
 void Graph::AddVertex() {
     order += 1;
-    vertices[order] = Vertex(order);
+    vertices[order] = Vertex();
 }
 
 /*
@@ -193,7 +193,7 @@ pair<vector<uint16_t>, uint32_t> Graph::ShortestPath(uint16_t start, uint16_t en
 
         list<uint16_t> neighbors = vertices[currIndex].Neighbors();
         list<uint16_t>::iterator it = neighbors.begin();
-        for (it; it != neighbors.end(); it++) {
+        for (; it != neighbors.end(); it++) {
             uint16_t u = *it;
             if (!visited[u]) {
                 queue.push(u);
@@ -236,7 +236,7 @@ uint32_t Graph::PushRelabelFlow(uint16_t source, uint16_t sink) {
         neighbors = vertices[v].NeighborsPtr();
         it = neighbors->begin();
         l.push_back(0);
-        for (it; it != neighbors->end(); it++) {
+        for (; it != neighbors->end(); it++) {
             f[edge(v, *it)] = 0;
             f[edge(*it, v)] = 0;
         }
@@ -247,7 +247,7 @@ uint32_t Graph::PushRelabelFlow(uint16_t source, uint16_t sink) {
     it = neighbors->begin();
     l[source] = order;
     uint32_t cap;
-    for (it; it != neighbors->end(); it++) {
+    for (; it != neighbors->end(); it++) {
         cap = capacity[edge(source, *it)];
         f[edge(source, *it)] = cap;
         f[edge(*it, source)] = -(static_cast<int32_t>(cap));
@@ -265,7 +265,7 @@ uint32_t Graph::PushRelabelFlow(uint16_t source, uint16_t sink) {
         std::list<uint16_t>::iterator it = active.begin();
         std::list<uint16_t>::iterator loc = it;
         int m = l[*it];
-        for (it; it != active.end(); it++) {
+        for (; it != active.end(); it++) {
             if (l[*it] > m) {
                 loc = it;
                 m = l[*it];
@@ -300,7 +300,8 @@ uint32_t Graph::PushRelabelFlow(uint16_t source, uint16_t sink) {
             else {
                 delta = std::min(excess[u], (uint32_t) f[edge(*it, u)]);
                 // update residual
-                if (f[edge(*it, u)] == capacity[edge(*it, u)] && !edgeVtoU) {
+                if (static_cast<uint32_t>(f[edge(*it, u)]) == capacity[edge(*it, u)] 
+                    && !edgeVtoU) {
                     residual.AddEdge(*it, u, delta);
                 }
                 else {
@@ -349,7 +350,7 @@ void Graph::Relabel(uint16_t u, Graph& residual, vector<int> &l) {
     int m = INT32_MAX;
     list<uint16_t>* neighbors = residual.vertices[u].NeighborsPtr();
     list<uint16_t>::iterator it = neighbors->begin();
-    for (it; it != neighbors->end(); it++) {
+    for (; it != neighbors->end(); it++) {
         m = std::min(m, l[*it]);
     }
 

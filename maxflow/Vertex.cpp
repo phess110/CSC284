@@ -4,11 +4,7 @@
 
 #include "Vertex.h"
 
-Vertex::Vertex() : index(0) {};
-
-Vertex::Vertex(uint16_t i) :
-    index(i)
-{};
+Vertex::Vertex() {}
 
 list<uint16_t> Vertex::Neighbors() {
     return neighbors;

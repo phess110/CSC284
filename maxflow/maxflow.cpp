@@ -11,7 +11,7 @@ int problemCount;
 
 // todo add mechanism to switch between two heuristics
 
-uint32_t ReadFlowNetwork() {
+uint32_t ReadFlowNetwork(bool runPushRelabel) {
     uint16_t order, size, source, sink;
 
     std::cin >> order;
@@ -30,16 +30,20 @@ uint32_t ReadFlowNetwork() {
         g.AddEdgeNoReversal(v, u, c);
     }
     
-    //return g.EdmondKarp(source, sink);
-    return g.PushRelabelFlow(source, sink);
+    if (runPushRelabel) {
+        return g.PushRelabelFlow(source, sink);
+    }
+    else {
+        return g.EdmondKarp(source, sink);
+    }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     std::cin >> problemCount;
 
     for (int i = 0; i < problemCount; i++) {
-        std::cout << ReadFlowNetwork() << std::endl;
+        std::cout << ReadFlowNetwork(argc > 1 && !strcmp(argv[1], "-p")) << std::endl;
     }
 
     return 0;

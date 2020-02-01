@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <cstdint>
 #include <list>
 
@@ -6,7 +7,6 @@ using std::list;
 
 class Vertex {
 public:
-    Vertex(uint16_t);
     Vertex();
 
     void AddNeighbor(uint16_t);
@@ -17,7 +17,6 @@ public:
     list<uint16_t> *NeighborsPtr();
 
 private:
-    uint16_t index;
     list<uint16_t> neighbors; 
 };
 
