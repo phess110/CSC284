@@ -3,9 +3,9 @@
 **/
 
 #include <iostream>
+#include <string.h>
 #include "Graph.h"
 #include "Vertex.h"
-#include <string>
 
 int problemCount;
 

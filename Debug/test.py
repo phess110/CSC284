@@ -2,14 +2,17 @@ import glob
 import os
 import re
 import time
+import sys
 
 inputs = glob.glob('*.in')
 inputs.sort()
 
+runFlag = " -p" if len(sys.argv) > 1 and sys.argv[1] == "-p" else ""
+
 for file in inputs:
-  start = time.perf_counter()
-  os.system('maxflow.exe < ' + file + " > my" + re.sub('in', 'out', file))
-  print("%s\t%s" % (file, round(time.perf_counter() - start), 3), end = '\t')
+  start = time.time()
+  os.system('./a.out < ' + file + " > my" + re.sub('in', 'out', file) + runFlag)
+  print("%s\t%s\t" % (file, round(time.time() - start, 3)), end = '')
   with open(re.sub('in', 'out', file), 'r') as f:
     with open("my" + re.sub('in', 'out', file), 'r') as f2:
       lines = f.readlines()
