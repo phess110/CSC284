@@ -1,15 +1,14 @@
 CC=gcc
-CXX=g++
+CXX=clang++
 RM=rm -f
-CPPFLAGS=-g $(shell root-config --cflags) -O3
-LDFLAGS=-g $(shell root-config --ldflags)
+CPPFLAGS=-Wall -Wextra -Werror -O3
+LDFLAGS=
 
 SRCS=Graph.cpp Vertex.cpp maxflow.cpp
 OBJS=$(subst .cc,.o,$(SRCS))
 
-all: maxflow
-tool: $(OBJS)
-    $(CXX) $(LDFLAGS) -o maxflow $(OBJS)
+maxflow: $(OBJS)
+    $(CXX) $(LDFLAGS) -o a $(OBJS)
 
 depend: .depend
 

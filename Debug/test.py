@@ -4,11 +4,12 @@ import re
 import time
 
 inputs = glob.glob('*.in')
+inputs.sort()
 
 for file in inputs:
   start = time.perf_counter()
   os.system('maxflow.exe < ' + file + " > my" + re.sub('in', 'out', file))
-  print("%s : %s seconds ---" % (file, (time.perf_counter() - start)))
+  print("%s\t%s" % (file, round(time.perf_counter() - start), 3), end = '\t')
   with open(re.sub('in', 'out', file), 'r') as f:
     with open("my" + re.sub('in', 'out', file), 'r') as f2:
       lines = f.readlines()
@@ -18,4 +19,4 @@ for file in inputs:
         if (a != b):
           match = false
           break
-  print(match)
+  print("Correct" if match else "Incorrect")
