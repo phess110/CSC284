@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import glob
 import os
 import re
@@ -7,6 +9,7 @@ import sys
 inputs = glob.glob('*.in')
 inputs.sort()
 
+os.system("rm -f my*")
 runFlag = " -p" if len(sys.argv) > 1 and sys.argv[1] == "-p" else ""
 
 for file in inputs:
