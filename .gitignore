@@ -7,3 +7,5 @@
 *.opendb
 *.idb
 *.pdb
+*.enc
+*.ilk
