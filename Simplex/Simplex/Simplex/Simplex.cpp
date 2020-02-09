@@ -1,4 +1,4 @@
-// Simplex.cpp : This file contains the 'main' function. Program execution begins and ends there.
+// Simplex.cpp
 #include <iostream>
 #include <algorithm>
 #include <vector>
@@ -8,14 +8,19 @@ using std::vector;
 int problemCount;
 uint16_t n, m;
 
-//vector<vector<double>> RowReduce(vector<vector<double>>, vector<double>);
+typedef vector<uint16_t> Basis;
+typedef vector<vector<double>> DoubleMatrix;
+
+int RowReduce(DoubleMatrix, vector<double>, vector<int> &);
+vector<uint16_t>::iterator BlandEnter(Basis &, vector<double> &);
+uint16_t BlandExit(DoubleMatrix &, vector<double> &, Basis &, uint16_t, double &);
 
 /*
     Compute the smallest element t in B such that c[t] > 0
 */
-vector<uint16_t>::iterator BlandEnter(vector<uint16_t> &B, vector<double> &c) {
-    vector<uint16_t>::iterator it = B.begin();
-    vector<uint16_t>::iterator minimum = B.end();
+Basis::iterator BlandEnter(Basis &B, vector<double> &c) {
+    Basis::iterator it = B.begin();
+    Basis::iterator minimum = B.end();
     bool found = false;
 
     for (; it != B.end(); it++) {
@@ -41,9 +46,9 @@ vector<uint16_t>::iterator BlandEnter(vector<uint16_t> &B, vector<double> &c) {
 
     Returns pointer to B[k] where k is choose to minimize B[k] subject to A_{k,t} > 0 and b_k/A_{k,t} = lambda^*
 */
-uint16_t BlandExit(vector<vector<double>> &A, 
+uint16_t BlandExit(DoubleMatrix &A,
                         vector<double> &b,
-                        vector<uint16_t> &B, 
+                        Basis &B, 
                         uint16_t t, 
                         double & minSlack) {
 
@@ -80,6 +85,7 @@ uint16_t BlandExit(vector<vector<double>> &A,
     param[in]: A - matrix of constraint coefficients
     param[in]: b - vector of constaint values
     param[in]: c - vector of objective constants
+    param[in]: B_comp - the complement of B in {0,...,m+n-1}
 
     param[out]: B - Contains initial feasible basis. If simplex halts, contains an optimal feasible basis.
     param[out]: x - Contains initial variable assignment. If simplex halts, contains an optimal assignment.
@@ -88,20 +94,21 @@ uint16_t BlandExit(vector<vector<double>> &A,
 **/
 
 double Simplex( double V,
-                vector<vector<double>> &A, 
+                DoubleMatrix &A,
                 vector<double> &b,
                 vector<double> &c,
                 vector<double> &x,
-                vector<uint16_t> &B,
-                vector<uint16_t> &B_complement) {
+                Basis &B,
+                vector<uint16_t> &B_comp) {
 
+    double lambda;
+    Basis::iterator t = BlandEnter(B_comp, c);
 
-    vector<uint16_t>::iterator t = BlandEnter(B_complement, c);
-    while (t != B_complement.end()) {
-        double lambda;
+    while (t != B_comp.end()) {
         uint16_t s = BlandExit(A, b, B, *t, lambda);
         if (lambda < 0) {
             // unbounded
+            // TODO 
             return 0.0;
         }
         else {
@@ -109,7 +116,7 @@ double Simplex( double V,
             // update assignment
             for (int i = 0; i < m; i++) {
                 if (i != s) {
-                    for (vector<uint16_t>::iterator j = B_complement.begin(); j != B_complement.end(); j++) {
+                    for (Basis::iterator j = B_comp.begin(); j != B_comp.end(); j++) {
                         if (*j != *t) {
                             A[i][*j] -= A[s][*j] * A[i][*t] / a_st;
                         }
@@ -119,7 +126,7 @@ double Simplex( double V,
                 }
                 else { 
                     // i = s
-                    for (vector<uint16_t>::iterator j = B_complement.begin(); j != B_complement.end(); j++) {
+                    for (Basis::iterator j = B_comp.begin(); j != B_comp.end(); j++) {
                         if (*j != *t) {
                             A[s][*j]   /= a_st;
                             c[*j]      -= c[*t] * A[s][*j] / a_st;
@@ -144,7 +151,7 @@ double Simplex( double V,
         *t = B[s];
         B[s] = temp;
 
-        t = BlandEnter(B_complement, c);
+        t = BlandEnter(B_comp, c);
     }
 
     return V;
@@ -157,8 +164,8 @@ double Simplex( double V,
 
     Calls simplex on intermediate LP: max -1y subject to A(x|y) = b, x >= 0
 */
-void FeasibleBasis(vector<vector<double>>& A, vector<double>& b) {
-    vector<uint16_t> B, B_complement;
+void FeasibleBasis(DoubleMatrix &A, vector<double> &b) {
+    Basis B, B_complement;
     vector<double> c;
     vector<double> x;
     double val = 0.0;
@@ -166,13 +173,13 @@ void FeasibleBasis(vector<vector<double>>& A, vector<double>& b) {
         if( i >= n ){ 
             B.push_back(i); 
             c.push_back(0.);
-            x.push_back(static_cast<float>(b[i - n]));
-            val -= static_cast<float>(b[i - n]);
+            x.push_back(b[i - n]);
+            val -= b[i - n];
         }
         else {
-            float f = 0.0;
+            double f = 0.0;
             for (int j = 0; j < m; j++) {
-                f -= static_cast<float>(A[j][i]);
+                f -= A[j][i];
             }
             c.push_back(f);
             x.push_back(0.);
@@ -194,8 +201,8 @@ void FeasibleBasis(vector<vector<double>>& A, vector<double>& b) {
     where C_i is the sum of column i of A. Note 1-C_i = 0 for i >= n
     */
 
+    // TODO don't pass A to simplex by reference
     // TODO remove remaining y's
-   
     // TODO output basis to cout
 }
 
@@ -224,26 +231,46 @@ int main(int argc, char *argv[])
             b.push_back(r);
         }
 
-        //vector<vector<double>> R = RowReduce(A, b);
+        vector<int> redundant;
+        int R = RowReduce(A, b, redundant);
 
-        // TODO  row reduce A, check for INFEASIBILITY or redundancies
-        //FeasibleBasis(A, b);
+        if (R == -1) {
+            std::cout << "INFEASIBLE\n";
+        }
+        else {
+            // remove redundant constraints
+            for (vector<int>::iterator it = redundant.begin(); it != redundant.end(); it++) {
+                A.erase(A.begin() + *it);
+                b.erase(b.begin() + *it);
+                m--;
+            }
+            //FeasibleBasis(A, b);
+        }
     }
 }
 
-vector<vector<double>> RowReduce(vector<vector<double>> A, vector<double> b) {
+/*
+    Computes the rank of matrix A by putting A in reduced row echelon form.
+    If the linear system Ax = b is infeasible, returns -1.
 
-    uint16_t pivotRow = 0, pivotCol;
+    param[out]: redundancies - list of redundant constraints that can be removed
+*/
+int RowReduce(DoubleMatrix A, vector<double> b, vector<int> &redundancies) {
+    int pivotRow = 0, pivotCol, rank;
+    double scale;
+
+    rank = m;
 
     while (pivotRow < m) {
         pivotCol = -1;
         // select a pivot column with nonzero entry
         for (int i = 0; i < n; i++) {
             if (A[pivotRow][i] != 0.0) {
+                scale = A[pivotRow][i];
                 for (int j = 0; j < n; j++) {
-                    A[pivotRow][j] /= A[pivotRow][i];
+                    A[pivotRow][j] /= scale;
                 }
-                b[pivotRow] /= A[pivotRow][i];
+                b[pivotRow] /= scale;
                 pivotCol = i;
                 break;
             }
@@ -252,26 +279,29 @@ vector<vector<double>> RowReduce(vector<vector<double>> A, vector<double> b) {
         if (pivotCol == -1) {
             // singularity
             if (b[pivotRow] != 0.0) {
-                // failure
+                // infeasible
+                return -1;
             }
             else {
-                // delete row
+                // redundant constraint, delete row
+                rank--;
+                redundancies.push_back(pivotRow);
             }
         }
         else {
             // Adjust A and B
-            double scale;
-
             for (int i = 0; i < m; i++) {
                 if (i != pivotRow) {
                     scale = A[i][pivotCol];
-                    for (int j = 0; i < n; j++) {
+                    for (int j = 0; j < n; j++) {
                         A[i][j] -= scale * A[pivotRow][j];
                     }
+                    b[i] -= scale * b[pivotRow];
                 }
             }
         }
 
         pivotRow++;
     }
+    return rank;
 }
