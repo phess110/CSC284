@@ -8,6 +8,8 @@ using std::vector;
 int problemCount;
 uint16_t n, m;
 
+//vector<vector<double>> RowReduce(vector<vector<double>>, vector<double>);
+
 /*
     Compute the smallest element t in B such that c[t] > 0
 */
@@ -222,7 +224,54 @@ int main(int argc, char *argv[])
             b.push_back(r);
         }
 
+        //vector<vector<double>> R = RowReduce(A, b);
+
         // TODO  row reduce A, check for INFEASIBILITY or redundancies
-        FeasibleBasis(A, b);
+        //FeasibleBasis(A, b);
+    }
+}
+
+vector<vector<double>> RowReduce(vector<vector<double>> A, vector<double> b) {
+
+    uint16_t pivotRow = 0, pivotCol;
+
+    while (pivotRow < m) {
+        pivotCol = -1;
+        // select a pivot column with nonzero entry
+        for (int i = 0; i < n; i++) {
+            if (A[pivotRow][i] != 0.0) {
+                for (int j = 0; j < n; j++) {
+                    A[pivotRow][j] /= A[pivotRow][i];
+                }
+                b[pivotRow] /= A[pivotRow][i];
+                pivotCol = i;
+                break;
+            }
+        }
+
+        if (pivotCol == -1) {
+            // singularity
+            if (b[pivotRow] != 0.0) {
+                // failure
+            }
+            else {
+                // delete row
+            }
+        }
+        else {
+            // Adjust A and B
+            double scale;
+
+            for (int i = 0; i < m; i++) {
+                if (i != pivotRow) {
+                    scale = A[i][pivotCol];
+                    for (int j = 0; i < n; j++) {
+                        A[i][j] -= scale * A[pivotRow][j];
+                    }
+                }
+            }
+        }
+
+        pivotRow++;
     }
 }
