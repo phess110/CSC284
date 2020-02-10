@@ -15,6 +15,11 @@ int RowReduce(DoubleMatrix, vector<double>, vector<int> &);
 vector<uint16_t>::iterator BlandEnter(Basis &, vector<double> &);
 uint16_t BlandExit(DoubleMatrix &, vector<double> &, Basis &, uint16_t, double &);
 
+double Simplex(double, DoubleMatrix &, vector<double> &, vector<double> &, vector<double> &,
+    Basis &, Basis &);
+
+void FeasibleBasis(DoubleMatrix &, vector<double> &);
+
 /*
     Compute the smallest element t in B such that c[t] > 0
 */
@@ -60,7 +65,7 @@ uint16_t BlandExit(DoubleMatrix &A,
         if (A[i][t] > 0) {
             tempSlack = b[i] / A[i][t];
             if (found) {
-                // TODO need to use approx equals
+                // TODO need to use approx equals?
                 if ((tempSlack == minSlack && B[i] < B[minimum]) || tempSlack < minSlack) {
                     minimum = i;
                     minSlack = tempSlack;
@@ -82,13 +87,12 @@ uint16_t BlandExit(DoubleMatrix &A,
 /**
     Returns optimal value of LP given by max c^Tx subject to Ax = b, x >= 0
 
-    param[in]: A - matrix of constraint coefficients
-    param[in]: b - vector of constaint values
-    param[in]: c - vector of objective constants
-    param[in]: B_comp - the complement of B in {0,...,m+n-1}
-
-    param[out]: B - Contains initial feasible basis. If simplex halts, contains an optimal feasible basis.
-    param[out]: x - Contains initial variable assignment. If simplex halts, contains an optimal assignment.
+    param[in/out]: A - matrix of constraint coefficients
+    param[in/out]: b - vector of constaint values
+    param[in/out]: c - vector of objective constants
+    param[in/out]: B_comp - the complement of B in {0,...,m+n-1}
+    param[in/out]: B - Contains initial feasible basis. If simplex halts, contains an optimal feasible basis.
+    param[in/out]: x - Contains initial variable assignment. If simplex halts, contains an optimal assignment.
 
     Note: Initially, we require Ax = b and x >= 0 and A_B is invertible.
 **/
@@ -99,7 +103,7 @@ double Simplex( double V,
                 vector<double> &c,
                 vector<double> &x,
                 Basis &B,
-                vector<uint16_t> &B_comp) {
+                Basis &B_comp) {
 
     double lambda;
     Basis::iterator t = BlandEnter(B_comp, c);
@@ -108,8 +112,8 @@ double Simplex( double V,
         uint16_t s = BlandExit(A, b, B, *t, lambda);
         if (lambda < 0) {
             // unbounded
-            // TODO 
-            return 0.0;
+            // TODO what to do here?
+            return 1.;
         }
         else {
             double a_st = A[s][*t];
@@ -200,14 +204,35 @@ void FeasibleBasis(DoubleMatrix &A, vector<double> &b) {
     val = c_B^T b = - column sum(b)
     where C_i is the sum of column i of A. Note 1-C_i = 0 for i >= n
     */
+    val = Simplex(val, A, b, c, x, B, B_complement);
 
-    // TODO don't pass A to simplex by reference
-    // TODO remove remaining y's
-    // TODO output basis to cout
+    if (val != 0.0) {
+        std::cout << "INFEASIBLE\n";
+    }
+    else {
+        Basis B_out;
+        for (int i = 0; i < m; i++) {
+            // Remove remaining y's from B
+            if (B[i] > n) {
+                Basis::iterator x_new = std::find_if(B_complement.begin(), B_complement.end(),
+                    [A, i](uint16_t j) { return j < n && A[i][j] != 0.; }); 
+                // Note: x_new should never be B.end() here since rank(A) = m
+                B_out.push_back(*x_new);
+                B_complement.erase(x_new);
+            }
+            else {
+                B_out.push_back(B[i]);
+            }
+        }
+
+        std::sort(B_out.begin(), B_out.end());
+        for (Basis::iterator it = B_out.begin(); it != B_out.end(); it++) {
+            std::cout << *it << " ";
+        }
+    }
 }
 
-int main(int argc, char *argv[])
-{
+int main() {
     std::cin >> problemCount;
     double r;
     // read in problem
@@ -244,7 +269,7 @@ int main(int argc, char *argv[])
                 b.erase(b.begin() + *it);
                 m--;
             }
-            //FeasibleBasis(A, b);
+            FeasibleBasis(A, b);
         }
     }
 }
