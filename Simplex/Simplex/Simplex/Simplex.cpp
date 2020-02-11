@@ -29,7 +29,7 @@ Basis::iterator BlandEnter(Basis &B, vector<double> &c) {
     bool found = false;
 
     for (; it != B.end(); it++) {
-        if (c[*it] > 0) {
+        if (c[*it] > 0) { // need epsilon here
             if (found) {
                 if (*it < *minimum) {
                     minimum = it;
@@ -62,7 +62,7 @@ uint16_t BlandExit(DoubleMatrix &A,
     bool found = false;
     
     for (int i = 0; i < m; i++) {
-        if (A[i][t] > 0) {
+        if (A[i][t] > 0) { // need epsilon here
             tempSlack = b[i] / A[i][t];
             if (found) {
                 // TODO need to use approx equals?
@@ -118,37 +118,34 @@ double Simplex( double V,
         else {
             double a_st = A[s][*t];
             // update assignment
+            b[s] /= a_st;
+            V += lambda * c[*t];
+            for (Basis::iterator j = B_comp.begin(); j != B_comp.end(); j++) {
+                if (*j != *t) {
+                    A[s][*j] /= a_st;
+                    c[*j] -= c[*t] * A[s][*j];
+                }
+            }
+            A[s][B[s]] = 1. / a_st;
+            c[B[s]] = -c[*t] / a_st;
+            c[*t] = 0.;
+
             for (int i = 0; i < m; i++) {
+                //x[B[i]] = b[i] - lambda * A[i][*t];
                 if (i != s) {
+                    b[i] -= b[s] * A[i][*t];
                     for (Basis::iterator j = B_comp.begin(); j != B_comp.end(); j++) {
                         if (*j != *t) {
-                            A[i][*j] -= A[s][*j] * A[i][*t] / a_st;
+                            A[i][*j] -= A[i][*t] * A[s][*j];
                         }
                     }
-                    A[i][B[s]]   = -(A[i][*t] / a_st);
-                    b[i]        -= b[s] * (A[i][*t] / a_st);
+                    A[i][B[s]]   = -A[i][*t] / a_st;
                 }
-                else { 
-                    // i = s
-                    for (Basis::iterator j = B_comp.begin(); j != B_comp.end(); j++) {
-                        if (*j != *t) {
-                            A[s][*j]   /= a_st;
-                            c[*j]      -= c[*t] * A[s][*j] / a_st;
-                            x[*j]       = 0.;
-                        }
-                        else {
-                            x[*t] = lambda;
-                        }
-                    }
-                    A[s][B[s]] = 1. / a_st;
-                    b[s] /= a_st;
-                    c[B[s]] = -c[*t] / a_st;
-                }
-                x[B[i]] = b[i] - lambda * A[i][*t];
+                A[i][*t] = (i != s) ? 0. : 1.;
             }
         }
-
-        V += lambda * c[*t];
+        x[*t] = lambda;
+        x[B[s]] = 0.;
 
         // update B and B^C
         uint16_t temp = *t;
@@ -183,7 +180,7 @@ void FeasibleBasis(DoubleMatrix &A, vector<double> &b) {
         else {
             double f = 0.0;
             for (int j = 0; j < m; j++) {
-                f -= A[j][i];
+                f += A[j][i];
             }
             c.push_back(f);
             x.push_back(0.);
