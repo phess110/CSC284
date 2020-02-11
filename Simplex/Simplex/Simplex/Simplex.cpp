@@ -7,6 +7,8 @@ using std::vector;
 
 int problemCount;
 uint16_t n, m;
+double tolerance = std::numeric_limits<double>::epsilon();
+double epsilon = 10000. * tolerance;
 
 typedef vector<uint16_t> Basis;
 typedef vector<vector<double>> DoubleMatrix;
@@ -29,7 +31,7 @@ Basis::iterator BlandEnter(Basis &B, vector<double> &c) {
     bool found = false;
 
     for (; it != B.end(); it++) {
-        if (c[*it] > 0) { // need epsilon here
+        if (c[*it] > epsilon) {
             if (found) {
                 if (*it < *minimum) {
                     minimum = it;
@@ -62,11 +64,12 @@ uint16_t BlandExit(DoubleMatrix &A,
     bool found = false;
     
     for (int i = 0; i < m; i++) {
-        if (A[i][t] > 0) { // need epsilon here
+        if (A[i][t] > epsilon) {
             tempSlack = b[i] / A[i][t];
             if (found) {
-                // TODO need to use approx equals?
-                if ((tempSlack == minSlack && B[i] < B[minimum]) || tempSlack < minSlack) {
+                // TODO need to use approx equals
+                if (tempSlack < minSlack || 
+                    (std::fabs(minSlack - tempSlack) < epsilon * std::fabs(minSlack + tempSlack) && B[i] < B[minimum])) {
                     minimum = i;
                     minSlack = tempSlack;
                 }
@@ -81,6 +84,7 @@ uint16_t BlandExit(DoubleMatrix &A,
 
     // if not found return negative value to indicate failure
     minSlack = found ? minSlack : -1.;
+
     return minimum;
 }
 
@@ -203,7 +207,7 @@ void FeasibleBasis(DoubleMatrix &A, vector<double> &b) {
     */
     val = Simplex(val, A, b, c, x, B, B_complement);
 
-    if (val != 0.0) {
+    if (std::fabs(val) > epsilon) {
         std::cout << "INFEASIBLE\n";
     }
     else {
@@ -224,8 +228,9 @@ void FeasibleBasis(DoubleMatrix &A, vector<double> &b) {
 
         std::sort(B_out.begin(), B_out.end());
         for (Basis::iterator it = B_out.begin(); it != B_out.end(); it++) {
-            std::cout << *it << " ";
+            std::cout << *it + 1 << " ";
         }
+        std::cout << std::endl;
     }
 }
 
