@@ -1,6 +1,7 @@
 // Simplex.cpp
-#include <iostream>
 #include <algorithm>
+#include <iostream>
+#include <math.h>
 #include <vector>
 
 using std::vector;
@@ -48,7 +49,7 @@ Basis::iterator BlandEnter(Basis &B, vector<double> &c) {
 }
 
 /*
-
+    
     param[out]: minSlack - minimum adjustment to remain feasible. If A_{i,t} <= 0 for all i in [m], minSlack has value -1 on return to indicate UNBOUNDED.
 
     Returns pointer to B[k] where k is choose to minimize B[k] subject to A_{k,t} > 0 and b_k/A_{k,t} = lambda^*
@@ -116,7 +117,6 @@ double Simplex( double V,
         uint16_t s = BlandExit(A, b, B, *t, lambda);
         if (lambda < 0) {
             // unbounded
-            // TODO what to do here?
             return 1.;
         }
         else {
@@ -135,8 +135,9 @@ double Simplex( double V,
             c[*t] = 0.;
 
             for (int i = 0; i < m; i++) {
-                //x[B[i]] = b[i] - lambda * A[i][*t];
+                x[B[i]] = b[i] - lambda * A[i][*t];
                 if (i != s) {
+                    x[B[i]] = b[i] - lambda * A[i][*t];
                     b[i] -= b[s] * A[i][*t];
                     for (Basis::iterator j = B_comp.begin(); j != B_comp.end(); j++) {
                         if (*j != *t) {
@@ -198,7 +199,7 @@ void FeasibleBasis(DoubleMatrix &A, vector<double> &b) {
         A_B^{-1}Ax = A_B^{-1}b
         x >= 0
     where 
-    c'^T = c^T - c_B^TA_B^{-1}A
+    c'^T = c^T - c_B^TA_B^{-1}A       
 
     In this case A_B^{-1} = I_{m x m}, c_B^T = (-1,...,-1), so
     c'^T = (-C_0, -C_0,..., -C_{n-1}, 1-C_n, ... 1-C_{n+m-1}) and
