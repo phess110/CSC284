@@ -14,7 +14,7 @@ os.system("rm -f my*")
 for file in inputs:
   start = time.time()
   os.system('./a.out < ' + file + " > my" + re.sub('in', 'out', file))
-  print("%s\t%s\t" % (file, round(time.time() - start, 3)), end = '')
+  print("%s\t%s\t" % (file, 1000 * round(time.time() - start, 6)), end = '')
   with open(re.sub('in', 'out', file), 'r') as f:
     with open("my" + re.sub('in', 'out', file), 'r') as f2:
       lines = f.readlines()
