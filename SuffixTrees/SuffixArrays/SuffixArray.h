@@ -13,8 +13,7 @@ using std::list;
 using std::vector;
 
 typedef struct SuffixTuple {
-    uint8_t msb, lsb;
-    uint32_t index;
+    uint32_t msb, lsb, index;
 } SuffixTuple;
 
 uint32_t len;
@@ -27,7 +26,7 @@ uint32_t A[MAX_LEN];
 uint32_t SuffixArray[MAX_LEN];
 
 // Buckets for sorting
-vector<list<SuffixTuple *>> buckets(NUM_CHARS);
+vector<list<SuffixTuple *>> buckets(MAX_LEN);
 
 uint8_t CharToDigit(char a) {
     if (a == '$') {
@@ -50,7 +49,7 @@ void BucketSort(bool sortByMSD) {
 
     // iterate over buckets, put back into tuples array
     uint32_t j = 0;
-    for (uint32_t i = 0; i < NUM_CHARS; i++) {
+    for (uint32_t i = 0; i < len; i++) { // TODO: should this be len + 1??
         list<SuffixTuple *>::iterator it = buckets[i].begin();
         for (; it != buckets[i].end(); it++) {
             tuples[j] = *it;

@@ -20,7 +20,7 @@ void BuildSuffixArray() {
 
         // use sorted tuples to compute A'
         uint32_t j = 0; // uniqueness counter
-        uint8_t prevMSD = 0, prevLSD = 0;
+        uint32_t prevMSD = 0, prevLSD = 0;
         for (uint32_t i = 0; i < len; i++) {
             // Compress
             if (prevLSD != tuples[i]->lsb || prevMSD != tuples[i]->msb) {
