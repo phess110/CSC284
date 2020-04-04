@@ -7,6 +7,7 @@
 #include <list>
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
 constexpr auto MAX_LEN = 100001;
 constexpr auto NUM_CHARS = 27;
 using std::list;
@@ -49,7 +50,8 @@ void BucketSort(bool sortByMSD) {
 
     // iterate over buckets, put back into tuples array
     uint32_t j = 0;
-    for (uint32_t i = 0; i < len; i++) { // TODO: should this be len + 1??
+    uint32_t numBuckets = MAX(len, NUM_CHARS);
+    for (uint32_t i = 0; i < numBuckets; i++) {
         list<SuffixTuple *>::iterator it = buckets[i].begin();
         for (; it != buckets[i].end(); it++) {
             tuples[j] = *it;
