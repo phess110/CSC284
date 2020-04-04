@@ -52,7 +52,7 @@ void BucketSort(bool sortByMSD) {
     uint32_t j = 0;
     for (uint32_t i = 0; i < NUM_CHARS; i++) {
         list<SuffixTuple *>::iterator it = buckets[i].begin();
-        for (it; it != buckets[i].end(); it++) {
+        for (; it != buckets[i].end(); it++) {
             tuples[j] = *it;
             j++;
         }
