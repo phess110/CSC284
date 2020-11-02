@@ -4,7 +4,7 @@ RM=rm -f
 CPPFLAGS=-Wall -Wextra -Werror -O3
 LDFLAGS=
 
-SRCS=Graph.cpp Vertex.cpp maxflow.cpp
+SRCS=$(wildcard *.cpp)
 OBJS=$(subst .cpp,.o,$(SRCS))
 
 a: $(OBJS)
